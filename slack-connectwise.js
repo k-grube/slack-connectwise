@@ -3,7 +3,8 @@
  */
 
 var request = require('request'),
-    ConnectWise = require('connectwise-rest');
+    ConnectWise = require('connectwise-rest'),
+    momemt = require('moment');
 
 var COMPANY_ID = process.env.COMPANY_ID,
     COMPANY_URL = process.env.COMPANY_URL,
@@ -160,9 +161,9 @@ var slackConnectWise = {
                         op: 'replace',
                         path: 'status/id',
                         value: parseInt(statusId)
-                    }).then(function(res){
+                    }).then(function (res) {
                         cb(res);
-                    }).fail(function(err){
+                    }).fail(function (err) {
                         cb(err);
                     });
                 }).fail(function (err) {
@@ -194,12 +195,12 @@ var slackConnectWise = {
             "    ticket [ *create* | *find* | *status* ]  \n" +
             "       ticket create [$summary=initial summary $company=companyId $board=boardName]\n" +
             "                                   - create a ticket with $summary, for $companyId, on $boardName\n" +
-            "       ticket find [ *$summary* ]     - post the first 5 results of a search for $summary\n" +
+            "       ticket find [ *$summary* ]     - post the first 3 results of a search for $summary\n" +
             "       ticket status [ *$ticketNbr* *$status* ] \n" +
             "                                   - change the status of $ticketId to $status\n" +
             "\n" +
             "    config [ *find* \n" +
-            "       config find [ *$configName* ]   - post the first 5 results of a search for $configName\n" +
+            "       config find [ *$configName* ]   - post the first 3 results of a search for $configName\n" +
             "       config find [ *$configId* ]     - post a link to the config $configId";
 
         message.mrkdwn = true;
@@ -263,8 +264,8 @@ var ticketInfo = function (ticket) {
  */
 var ticketInfoStr = function (ticket) {
     var msg = '*' + ticket.summary + '*';
-    msg += '\nBoard: ' + ticket.board.name + ', Status: ' + ticket.status.name + ', Company: ' + ticket.company.identifier;
-    msg += '\n' + linkTicket(ticket.id);
+    msg += '#<' + linkTicket(ticket.id) + '|' + ticket.id + '> Entered: ' + momemt(ticket.dateEntered) + ', Status: '
+        + ticket.status.name + ', Company: ' + ticket.company.identifier;
 
     console.log('ticket info', msg);
 
@@ -345,9 +346,9 @@ var routeCreateTicket = function (args, cb) {
         case 'status' || 's':
             var re = /(\d{1,10}) ([a-zA-Z]*$)/g;
             var params = re.exec(args.join(' '));
-            if(!params || !params[0] || !params[1]){
+            if (!params || !params[0] || !params[1]) {
                 cb(slackConnectWise.getUsage());
-            }else {
+            } else {
                 slackConnectWise.updateStatus(params[1], params[2], cb);
             }
             break;
