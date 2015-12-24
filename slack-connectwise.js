@@ -264,7 +264,7 @@ var ticketInfo = function (ticket) {
  */
 var ticketInfoStr = function (ticket) {
     var msg = '*' + ticket.summary + '*';
-    msg += '\n#<' + linkTicket(ticket.id) + '|' + ticket.id + '> Entered: ' + momemt(ticket.dateEntered) + ', Status: '
+    msg += '\n#<' + linkTicket(ticket.id) + '|' + ticket.id + '> Entered: ' + momemt(ticket.dateEntered, 'MM-DD-YYYY h:m') + ', Status: '
         + ticket.status.name + ', Company: ' + ticket.company.identifier;
 
     console.log('ticket info', msg);
