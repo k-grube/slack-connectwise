@@ -19,7 +19,7 @@ router.post('/api/slack', function (req, res, next) {
                 text: 'Working on it...',
                 response_type: 'in_channel'
             });
-        }, 2500);
+        }, 1000);
         slackCW.route(req.body, function (msg) {
             if (Date.now() - startTime < 1000) {
                 clearTimeout(timeout);
