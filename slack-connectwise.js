@@ -10,6 +10,9 @@ var COMPANY_ID = process.env.COMPANY_ID,
     PUBLIC_KEY = process.env.PUBLIC_KEY,
     PRIVATE_KEY = process.env.PRIVATE_KEY;
 
+/**
+ * @type Tickets
+ */
 var cwt = new ConnectWise({
     companyId: COMPANY_ID,
     companyUrl: COMPANY_URL,
@@ -33,13 +36,15 @@ var slackConnectWise = {
 
         console.log('args length:', args.length);
 
-        if (!args) {
+        if (args.length < 1) {
             cb(this.getUsage());
         } else {
-            if (args.length == 1) {
-                routeLinkTicket(args[0], args, cb);
-            } else if (args[0].toLowerCase() == 'link') {
+            if (args[0].toLowerCase() == 'link' || args[0].toLowerCase() == 'l') {
                 routeLinkTicket(args[1], args, cb);
+            } else if (args[0].toLowerCase() == 'ticket' || args[0].toLowerCase() == 't') {
+                routeCreateTicket(args, cb);
+            } else if (args.length == 1 && args[0] != '') {
+                routeLinkTicket(args[0], args, cb)
             } else {
                 cb(this.getUsage());
             }
@@ -112,6 +117,61 @@ var slackConnectWise = {
             pageSize: 3,
             orderBy: 'dateEntered desc'
         });
+    },
+
+    createTicket: function (summary, companyId, board, initialDescription) {
+        return cwt.createTicket({
+            summary: summary,
+            company: {
+                identifier: companyId
+            },
+            board: {
+                name: board
+            },
+            initialDescription: initialDescription
+        });
+
+    },
+
+    /**
+     *
+     * @param id
+     * @param status
+     * @param cb
+     */
+    updateStatus: function (id, status, cb) {
+        var boardId = 0,
+            statusId = 0;
+
+        //look up the ticket to find the board's ID
+        cwt.getTicketById(id)
+            .then(function (res) {
+
+                boardId = res.board.id;
+
+                //look up the requested status ID
+                cwt.api('/service/boards/' + boardId + '/statuses', 'GET', {
+                    conditions: 'name like "' + status + '"'
+                }).then(function (res) {
+
+                    statusId = res[0].id;
+
+                    cwt.updateTicket(id, {
+                        op: 'replace',
+                        path: 'status/id',
+                        value: parseInt(statusId)
+                    }).then(function(res){
+                        cb(res);
+                    }).fail(function(err){
+                        cb(err);
+                    });
+                }).fail(function (err) {
+                    cb(err);
+                });
+            })
+            .fail(function (err) {
+                cb(err);
+            })
     },
 
     /**
@@ -211,16 +271,21 @@ var ticketInfoStr = function (ticket) {
     return msg;
 };
 
-var errorHandler = function (err) {
+/**
+ *
+ * @param err
+ * @param type
+ */
+var errorHandler = function (err, type) {
     var msg = {};
-    msg.text = '\nCould not find any matching tickets.  Sorry.';
+    msg.text = '\nCould not find any matching ' + type + '.  Sorry.';
     msg.text += '\n' + JSON.stringify(err);
     msg.response_type = 'in_channel';
 };
 
 /**
  * Route a command to the correct Link Ticket command
- * @param {string|number} id
+ * @param {string|number} id or summary
  * @param {string[]} args
  * @param {function} cb
  */
@@ -233,7 +298,7 @@ function routeLinkTicket(id, args, cb) {
                 cb(ticketInfo(res));
             })
             .fail(function (err) {
-                cb(errorHandler(err));
+                cb(errorHandler(err, 'Ticket'));
             });
 
     } else {
@@ -258,10 +323,40 @@ function routeLinkTicket(id, args, cb) {
                 }
             })
             .fail(function (err) {
-                cb(errorHandler(err));
+                cb(errorHandler(err, 'Ticket'));
             });
     }
 }
+
+/**
+ *
+ * @param {string[]} args
+ * @param {function} cb
+ */
+var routeCreateTicket = function (args, cb) {
+    switch (args[1].toLowerCase()) {
+        case 'create' || 'c':
+
+            //slackConnectWise.createTicket();
+            break;
+        case 'find' || 'f':
+            routeLinkTicket(args[0], args.slice(1), cb);
+            break;
+        case 'status' || 's':
+            var re = /(\d{1,10}) ([a-zA-Z]*$)/g;
+            var params = re.exec(args.join(' '));
+            if(!params || !params[0] || !params[1]){
+                cb(slackConnectWise.getUsage());
+            }else {
+                slackConnectWise.updateStatus(params[1], params[2], cb);
+            }
+            break;
+        default:
+            cb(slackConnectWise.getUsage());
+            break;
+    }
+
+};
 
 /**
  * @typedef {object} SlackBody
