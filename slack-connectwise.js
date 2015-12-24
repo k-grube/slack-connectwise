@@ -4,7 +4,7 @@
 
 var request = require('request'),
     ConnectWise = require('connectwise-rest'),
-    momemt = require('moment');
+    moment = require('moment');
 
 var COMPANY_ID = process.env.COMPANY_ID,
     COMPANY_URL = process.env.COMPANY_URL,
@@ -264,7 +264,7 @@ var ticketInfo = function (ticket) {
  */
 var ticketInfoStr = function (ticket) {
     var msg = '*' + ticket.summary + '*';
-    msg += '\n#<' + linkTicket(ticket.id) + '|' + ticket.id + '> Entered: ' + moment(ticket.dateEntered, 'MM-DD-YYYY h:m') + ', Status: '
+    msg += '\n#<' + linkTicket(ticket.id) + '|' + ticket.id + '> Entered: ' + moment(ticket.dateEntered).format('MM-DD-YYYY hh:mm a') + ', Status: '
         + ticket.status.name + ', Company: ' + ticket.company.identifier;
 
     console.log('ticket info', msg);
