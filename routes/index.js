@@ -21,7 +21,7 @@ router.post('/api/slack', function (req, res, next) {
             });
         }, 2500);
         slackCW.route(req.body, function (msg) {
-            if (Date.now() - startTime < 2000) {
+            if (Date.now() - startTime < 1000) {
                 clearTimeout(timeout);
                 res.json(msg);
             } else {
