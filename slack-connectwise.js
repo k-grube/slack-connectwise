@@ -12,12 +12,6 @@ var COMPANY_ID = process.env.COMPANY_ID,
     PRIVATE_KEY = process.env.PRIVATE_KEY,
     SLACK_TZ = process.env.SLACK_TZ;
 
-try {
-    SLACK_TZ = parseInt(SLACK_TZ);
-} catch (e) {
-    throw e;
-}
-
 /**
  * @type Tickets
  */
