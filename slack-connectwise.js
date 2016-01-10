@@ -9,7 +9,14 @@ var request = require('request'),
 var COMPANY_ID = process.env.COMPANY_ID,
     COMPANY_URL = process.env.COMPANY_URL,
     PUBLIC_KEY = process.env.PUBLIC_KEY,
-    PRIVATE_KEY = process.env.PRIVATE_KEY;
+    PRIVATE_KEY = process.env.PRIVATE_KEY,
+    SLACK_TZ = process.env.SLACK_TZ;
+
+try {
+    SLACK_TZ = parseInt(SLACK_TZ);
+} catch (e) {
+    throw e;
+}
 
 /**
  * @type Tickets
@@ -264,7 +271,9 @@ var ticketInfo = function (ticket) {
  */
 var ticketInfoStr = function (ticket) {
     var msg = '*' + ticket.summary + '*';
-    msg += '\n#<' + linkTicket(ticket.id) + '|' + ticket.id + '> Entered: ' + moment(ticket.dateEntered).format('MM-DD-YYYY hh:mm a') + ', Status: '
+    var dateEntered = moment(ticket.dateEntered).tz(SLACK_TZ).format('MM-DD-YYYY hh:mm a');
+
+    msg += '\n#<' + linkTicket(ticket.id) + '|' + ticket.id + '> Entered: ' + dateEntered + ', Status: '
         + ticket.status.name + ', Company: ' + ticket.company.identifier;
 
     console.log('ticket info', msg);
