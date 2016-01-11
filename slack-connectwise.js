@@ -10,10 +10,10 @@ var COMPANY_ID = process.env.COMPANY_ID,
     COMPANY_URL = process.env.COMPANY_URL,
     PUBLIC_KEY = process.env.PUBLIC_KEY,
     PRIVATE_KEY = process.env.PRIVATE_KEY,
-    SLACK_TZ = process.env.SLACK_TZ;
+    SLACK_TZ = process.env.SLACK_TZ || 'America/Los_Angeles';
 
 /**
- * @type Tickets
+ * @type ConnectWiseRest.ServiceDeskAPI.Tickets
  */
 var cwt = new ConnectWise({
     companyId: COMPANY_ID,
@@ -38,17 +38,16 @@ var slackConnectWise = {
 
         console.log('args length:', args.length);
 
-        if (args.length < 1) {
+        if (args.length < 1 || args[0].toLowerCase() === 'help' || args[0].toLowerCase() === 'usage') {
             cb(this.getUsage());
         } else {
-            if (args[0].toLowerCase() == 'link' || args[0].toLowerCase() == 'l') {
-                routeLinkTicket(args[1], args, cb);
-            } else if (args[0].toLowerCase() == 'ticket' || args[0].toLowerCase() == 't') {
+            if (args[0].toLowerCase() === 'link' || args[0].toLowerCase() === 'l') {
+                routeLinkTicket(args, cb);
+            } else if (args[0].toLowerCase() === 'ticket' || args[0].toLowerCase() === 't') {
                 routeCreateTicket(args, cb);
-            } else if (args.length == 1 && args[0] != '') {
-                routeLinkTicket(args[0], args, cb)
             } else {
-                cb(this.getUsage());
+                //search for /cw <summary>
+                routeLinkTicket(args, cb)
             }
         }
     },
@@ -78,6 +77,7 @@ var slackConnectWise = {
 
         request(options, function (err, res) {
             //@todo something to handle errors here
+            console.log('request err/response', err, res);
         });
 
     },
@@ -142,38 +142,15 @@ var slackConnectWise = {
      * @param cb
      */
     updateStatus: function (id, status, cb) {
-        var boardId = 0,
-            statusId = 0;
 
-        //look up the ticket to find the board's ID
-        cwt.getTicketById(id)
+        cwt.updateTicketStatusByName(id, status)
             .then(function (res) {
-
-                boardId = res.board.id;
-
-                //look up the requested status ID
-                cwt.api('/service/boards/' + boardId + '/statuses', 'GET', {
-                    conditions: 'name like "' + status + '"'
-                }).then(function (res) {
-
-                    statusId = res[0].id;
-
-                    cwt.updateTicket(id, {
-                        op: 'replace',
-                        path: 'status/id',
-                        value: parseInt(statusId)
-                    }).then(function (res) {
-                        cb(res);
-                    }).fail(function (err) {
-                        cb(err);
-                    });
-                }).fail(function (err) {
-                    cb(err);
-                });
+                cb(null, res);
             })
             .fail(function (err) {
-                cb(err);
-            })
+                cb(err, null);
+            });
+
     },
 
     /**
@@ -245,9 +222,12 @@ var linkConfig = function (id) {
 /**
  *
  * @param {Ticket} ticket
- * @returns {SlackMessage|object}
+ * @returns {SlackMessage}
  */
 var ticketInfo = function (ticket) {
+    /**
+     * @type {SlackMessage}
+     */
     var msg = {};
     msg.text = ticketInfoStr(ticket);
     msg.mrkdwn = true;
@@ -260,7 +240,7 @@ var ticketInfo = function (ticket) {
 
 /**
  *
- * @param ticket
+ * @param {Ticket} ticket
  * @returns {string}
  */
 var ticketInfoStr = function (ticket) {
@@ -279,24 +259,51 @@ var ticketInfoStr = function (ticket) {
  *
  * @param err
  * @param type
+ * @returns {SlackMessage}
  */
 var errorHandler = function (err, type) {
+    /**
+     *
+     * @type {SlackMessage}
+     */
     var msg = {};
     msg.text = '\nCould not find any matching ' + type + '.  Sorry.';
     msg.text += '\n' + JSON.stringify(err);
-    msg.response_type = 'in_channel';
+    msg.response_type = 'ephemeral';
+    return msg;
 };
 
 /**
  * Route a command to the correct Link Ticket command
- * @param {string|number} id or summary
  * @param {string[]} args
- * @param {function} cb
+ * @param {function} cb returns @type SlackMessage
  */
-function routeLinkTicket(id, args, cb) {
+function routeLinkTicket(args, cb) {
     console.log('cw link', args);
-    //if first arg is a number, try to match, otherwise search
-    if (parseInt(id)) {
+    var id, summary;
+    if (args[0].toLowerCase() === 'ticket' || args[0].toLowerCase() === 't') {
+        if (args[1].toLowerCase() === 'find' || args[1].toLowerCase() === 'f') {
+            if (parseInt(args[2])) {
+                id = args[2];
+            } else {
+                summary = args.slice(2).join(' ');
+            }
+        } else {
+            cb(slackConnectWise.getUsage());
+        }
+    } else if (args[1].toLowerCase() === 'link' || args[1].toLowerCase() === 'l') {
+        if(parseInt(args[2])){
+            id = args[2];
+        }else{
+            summary = args.slice(2).join(' ');
+        }
+    } else if (parseInt(args[0])) {
+        id = args[0];
+    }else {
+        summary = args.join(' ');
+    }
+
+    if(id){
         slackConnectWise.findTicketById(id)
             .then(function (res) {
                 cb(ticketInfo(res));
@@ -305,8 +312,8 @@ function routeLinkTicket(id, args, cb) {
                 cb(errorHandler(err, 'Ticket'));
             });
 
-    } else {
-        slackConnectWise.findTickets('summary like "%' + args.slice(1).join(' ') + '%"')
+    } else if (summary) {
+        slackConnectWise.findTickets('summary like "%' + summary + '%"')
             .then(function (res) {
                 if (res.length > 0) {
                     var msg = {};
@@ -329,6 +336,8 @@ function routeLinkTicket(id, args, cb) {
             .fail(function (err) {
                 cb(errorHandler(err, 'Ticket'));
             });
+    } else {
+        cb(slackConnectWise.getUsage());
     }
 }
 
@@ -344,7 +353,7 @@ var routeCreateTicket = function (args, cb) {
             //slackConnectWise.createTicket();
             break;
         case 'find' || 'f':
-            routeLinkTicket(args[0], args.slice(1), cb);
+            routeLinkTicket(args, cb);
             break;
         case 'status' || 's':
             var re = /(\d{1,10}) ([a-zA-Z]*$)/g;
@@ -352,7 +361,7 @@ var routeCreateTicket = function (args, cb) {
             if (!params || !params[0] || !params[1]) {
                 cb(slackConnectWise.getUsage());
             } else {
-                slackConnectWise.updateStatus(params[1], params[2], cb);
+                //slackConnectWise.updateStatus(params[1], params[2]).then(cb).fail(cb);
             }
             break;
         default:
