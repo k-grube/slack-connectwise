@@ -5,6 +5,7 @@
 var request = require('request'),
     ConnectWise = require('connectwise-rest'),
     moment = require('moment');
+require('moment-timezone');
 
 var COMPANY_ID = process.env.COMPANY_ID,
     COMPANY_URL = process.env.COMPANY_URL,
@@ -31,23 +32,22 @@ var slackConnectWise = {
      * @returns {*|promise}
      */
     route: function (body, callback) {
-        var args = parseArgs(body.text),
-            cb = callback;
+        var args = parseArgs(body.text);
 
         console.log('route:', args);
 
         console.log('args length:', args.length);
 
         if (args.length < 1 || args[0].toLowerCase() === 'help' || args[0].toLowerCase() === 'usage') {
-            cb(this.getUsage());
+            callback(this.getUsage());
         } else {
             if (args[0].toLowerCase() === 'link' || args[0].toLowerCase() === 'l') {
-                routeLinkTicket(args, cb);
+                routeLinkTicket(args, callback);
             } else if (args[0].toLowerCase() === 'ticket' || args[0].toLowerCase() === 't') {
-                routeCreateTicket(args, cb);
+                routeCreateTicket(args, callback);
             } else {
                 //search for /cw <summary>
-                routeLinkTicket(args, cb)
+                routeLinkTicket(args, callback)
             }
         }
     },
@@ -245,6 +245,7 @@ var ticketInfo = function (ticket) {
  */
 var ticketInfoStr = function (ticket) {
     var msg = '*' + ticket.summary + '*';
+    console.log('dateEntered', ticket.dateEntered);
     var dateEntered = moment(ticket.dateEntered).tz(SLACK_TZ).format('MM-DD-YYYY hh:mm a');
 
     msg += '\n#<' + linkTicket(ticket.id) + '|' + ticket.id + '> Entered: ' + dateEntered + ', Status: '
@@ -267,8 +268,10 @@ var errorHandler = function (err, type) {
      * @type {SlackMessage}
      */
     var msg = {};
-    msg.text = '\nCould not find any matching ' + type + '.  Sorry.';
-    msg.text += '\n' + JSON.stringify(err);
+    msg.text = 'Could not find any matching ' + type + '.  Sorry.';
+    if (err) {
+        msg.text += '\n' + JSON.stringify(err);
+    }
     msg.response_type = 'ephemeral';
     return msg;
 };
@@ -281,29 +284,34 @@ var errorHandler = function (err, type) {
 function routeLinkTicket(args, cb) {
     console.log('cw link', args);
     var id, summary;
-    if (args[0].toLowerCase() === 'ticket' || args[0].toLowerCase() === 't') {
-        if (args[1].toLowerCase() === 'find' || args[1].toLowerCase() === 'f') {
+
+    if (args.length > 1) {
+        if (args[0].toLowerCase() === 'ticket' || args[0].toLowerCase() === 't') {
+            if (args[1].toLowerCase() === 'find' || args[1].toLowerCase() === 'f') {
+                if (parseInt(args[2])) {
+                    id = args[2];
+                } else {
+                    summary = args.slice(2).join(' ');
+                }
+            } else {
+                cb(slackConnectWise.getUsage());
+            }
+        } else if (args[1].toLowerCase() === 'link' || args[1].toLowerCase() === 'l') {
             if (parseInt(args[2])) {
                 id = args[2];
             } else {
                 summary = args.slice(2).join(' ');
             }
         } else {
-            cb(slackConnectWise.getUsage());
-        }
-    } else if (args[1].toLowerCase() === 'link' || args[1].toLowerCase() === 'l') {
-        if(parseInt(args[2])){
-            id = args[2];
-        }else{
-            summary = args.slice(2).join(' ');
+            summary = args.join(' ');
         }
     } else if (parseInt(args[0])) {
         id = args[0];
-    }else {
-        summary = args.join(' ');
     }
 
-    if(id){
+    console.log('ticket link: id, summary', id, summary);
+
+    if (id) {
         slackConnectWise.findTicketById(id)
             .then(function (res) {
                 cb(ticketInfo(res));
@@ -327,10 +335,7 @@ function routeLinkTicket(args, cb) {
 
                     cb(msg);
                 } else {
-                    var msg = {};
-                    msg.text = 'Could not find any matching tickets.  Sorry.';
-                    msg.response_type = 'in_channel';
-                    cb(msg);
+                    cb(errorHandler(null, 'tickets'));
                 }
             })
             .fail(function (err) {

@@ -10,11 +10,10 @@ if (!SLACK_SLASH_TOKEN) {
 var router = express.Router();
 
 router.post('/api/slack', function (req, res, next) {
-
     if (req.body && req.body.token === SLACK_SLASH_TOKEN) {
-
+        /** @type SlackMessage */
         var response = {
-            user_name: req.body.user_name,
+            username: req.body.user_name,
             text: req.body.command + ' ' + req.body.text,
             response_type: 'in_channel'
         };
@@ -30,7 +29,6 @@ router.post('/api/slack', function (req, res, next) {
         res.status(401);
         res.end();
     }
-
 });
 
 module.exports = router;

@@ -4,6 +4,10 @@
 
 var scw = require('./slack-connectwise');
 
-scw.findTicketById('462123')
-    .then(console.log)
-    .fail(console.log);
+var moment = require('moment');
+
+
+
+var test = moment('2008-09-25T19:05:03Z').tz('America/Los_Angeles');
+
+console.log(test.format('MM-DD-YYYY hh:mm a'));
