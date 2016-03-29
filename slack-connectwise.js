@@ -105,7 +105,7 @@ var slackConnectWise = {
                     .fail(function (err) {
                         cb(errorHandler(err, 'Ticket'));
                     });
-            } else {
+            } else if (args.n) {
                 //by ticket number
                 slackConnectWise.findTicketById(args.n)
                     .then(function (res) {
@@ -114,6 +114,9 @@ var slackConnectWise = {
                     .fail(function (err) {
                         cb(errorHandler(err, 'Ticket'));
                     });
+            } else {
+                //send usage
+                cb(this.getUsage());
             }
         } else if (args['_'].length > 0) {
             //check if using /cw 123456 shortcut
@@ -158,11 +161,11 @@ var slackConnectWise = {
             method: 'POST'
         };
 
-        console.log('Sending POST message: ', message, ' with options: ', options);
+        console.log('Sending POST message: ', message);
 
         request(options, function (err, res) {
             //@todo something to handle errors here
-            console.log('request err/response', err, res);
+            console.log('request err', err);
         });
 
     },
@@ -383,22 +386,24 @@ var ticketInfoAttachment = function (ticket, extended) {
         short: true
     }, {
         title: 'Average Time',
-        value: ticket.customFields[1].value,
+        value: ticket.customFields[1] && ticket.customFields[1].value || "",
         short: true
     }, {
         title: 'Priority',
         value: ticket.priority.name,
         short: true
+    }, {
+        title: 'Ticket Owner',
+        value: ticket.owner.identifier,
+        short: true
     }];
 
     if (extended) {
-        if (ticket.notes.length > 0) {
-            attachment.fields.push({
-                title: 'Description',
-                value: ticket.notes[0].text,
-                short: false
-            });
-        }
+        attachment.fields.push({
+            title: 'Description',
+            value: ticket.notes[0] && ticket.notes[0].text,
+            short: false
+        });
     }
 
     return attachment;
@@ -491,7 +496,7 @@ function routeLinkTicket(args, cb) {
                     var msg = {};
                     var result = [];
                     for (var i = 0; i < res.length; i++) {
-                        result.push(ticketInfoStr(res[i]));
+                        result.push(ticketInfoStr(res[i], args.e));
                     }
                     msg.text = result.join('\n');
                     msg.response_type = 'in_channel';
