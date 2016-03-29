@@ -17,7 +17,7 @@ var COMPANY_ID = process.env.COMPANY_ID,
     SLACK_TZ = process.env.SLACK_TZ || 'America/Los_Angeles';
 
 /**
- * @type ConnectWiseRest.ServiceDeskAPI.Tickets
+ * @type Tickets
  */
 var cwt = new ConnectWise({
     companyId: COMPANY_ID,
@@ -154,7 +154,7 @@ var slackConnectWise = {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(message),
+            body: message,
             method: 'POST'
         };
 
@@ -217,24 +217,17 @@ var slackConnectWise = {
             },
             initialDescription: initialDescription
         });
-
     },
 
     /**
      *
      * @param id
      * @param status
-     * @param cb
+     * @returns {promise}
      */
-    updateStatus: function (id, status, cb) {
+    updateStatus: function (id, status) {
 
-        cwt.updateTicketStatusByName(id, status)
-            .then(function (res) {
-                cb(null, res);
-            })
-            .fail(function (err) {
-                cb(err, null);
-            });
+        return cwt.updateTicketStatusByName(id, status);
 
     },
 
@@ -326,18 +319,18 @@ var linkConfig = function (id) {
 /**
  *
  * @param {Ticket} ticket
+ * @param {boolean} extended
  * @returns {SlackMessage}
  */
-var ticketInfo = function (ticket) {
+var ticketInfo = function (ticket, extended) {
     /**
      * @type {SlackMessage}
      */
     var msg = {};
-    msg.text = ticketInfoStr(ticket);
     msg.mrkdwn = true;
+    msg.username = "ConnectWise";
+    msg.attachments = [ticketInfoAttachment(ticket, extended)];
     msg.response_type = 'in_channel';
-
-    console.log('ticket info', msg);
 
     return msg;
 };
@@ -345,17 +338,66 @@ var ticketInfo = function (ticket) {
 /**
  *
  * @param {Ticket} ticket
+ * @param {boolean} extended
+ * @returns {object}
+ */
+var ticketInfoAttachment = function (ticket, extended) {
+
+    var attachment = {};
+
+    attachment.fallback = +ticket.id + ': ' + ticket.summary + ': ' + linkTicket(ticket.id);
+    attachment.pretext = '#<' + linkTicket(ticket.id) + '|' + ticket.id + '> *' + ticket.summary + '*';
+
+    attachment.fields = [{
+        title: 'Entered',
+        value: moment(ticket.dateEntered).tz(SLACK_TZ).format('MM-DD-YYYY hh:mm a'),
+        short: true
+    }, {
+        title: 'Status',
+        value: ticket.status.name,
+        short: true
+    }, {
+        title: 'Company',
+        value: ticket.company.identifier,
+        short: true
+    }, {
+        title: 'Contact',
+        value: ticket.contact.name,
+        short: true
+    }, {
+        title: 'In SLA',
+        value: ticket.isInSla,
+        short: true
+    }, {
+        title: 'Priority',
+        value: ticket.priority.name
+    }];
+
+    if (extended) {
+        attachment.fields.push({
+            title: 'Description',
+            value: ticket.initialDescription,
+            short: false
+        });
+    }
+
+    return attachment;
+
+};
+
+/**
+ *
+ * @param {Ticket} ticket
+ * @param {boolean} extended
  * @returns {string}
  */
-var ticketInfoStr = function (ticket) {
+var ticketInfoStr = function (ticket, extended) {
     var msg = '*' + ticket.summary + '*';
     console.log('dateEntered', ticket.dateEntered);
     var dateEntered = moment(ticket.dateEntered).tz(SLACK_TZ).format('MM-DD-YYYY hh:mm a');
 
     msg += '\n#<' + linkTicket(ticket.id) + '|' + ticket.id + '> Entered: ' + dateEntered + ', Status: '
         + ticket.status.name + ', Company: ' + ticket.company.identifier;
-
-    console.log('ticket info', msg);
 
     return msg;
 };
@@ -412,8 +454,6 @@ function routeLinkTicket(args, cb) {
     } else if (parseInt(args[0])) {
         id = args[0];
     }
-
-    console.log('ticket link: id, summary', id, summary);
 
     if (id) {
         slackConnectWise.findTicketById(id)
