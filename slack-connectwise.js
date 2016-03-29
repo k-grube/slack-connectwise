@@ -154,7 +154,7 @@ var slackConnectWise = {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: message,
+            body: JSON.stringify(message),
             method: 'POST'
         };
 
