@@ -174,7 +174,12 @@ var slackConnectWise = {
      */
     findTicketById: function (id) {
         console.log("searching for id", id);
-        return cwt.getTicketById(id)
+        return cwt.getTicketById(id).then(function (ticket) {
+            return cwt.api(ticket._info.notes_href, 'GET').then(function (notes) {
+                ticket.notes = notes;
+                return ticket;
+            })
+        })
     },
 
     /**
@@ -188,6 +193,13 @@ var slackConnectWise = {
             conditions: conditions,
             page: 1,
             pageSize: 1
+        }).then(function (tickets) {
+            return Q.all(tickets.map(function (ticket) {
+                return cwt.api(ticket._info.notes_href, 'GET').then(function (notes) {
+                    ticket.notes = notes;
+                    return ticket;
+                });
+            }));
         });
     },
 
@@ -203,6 +215,13 @@ var slackConnectWise = {
             page: 1,
             pageSize: 3,
             orderBy: 'dateEntered desc'
+        }).then(function (tickets) {
+            return Q.all(tickets.map(function (ticket) {
+                return cwt.api(ticket._info.notes_href, 'GET').then(function (notes) {
+                    ticket.notes = notes;
+                    return ticket;
+                });
+            }));
         });
     },
 
@@ -379,6 +398,7 @@ var ticketInfoAttachment = function (ticket, extended) {
             value: ticket.initialDescription,
             short: false
         });
+                value: ticket.notes[0].text,
     }
 
     return attachment;
