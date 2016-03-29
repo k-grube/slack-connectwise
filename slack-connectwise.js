@@ -245,9 +245,7 @@ var slackConnectWise = {
      * @returns {promise}
      */
     updateStatus: function (id, status) {
-
         return cwt.updateTicketStatusByName(id, status);
-
     },
 
     /**
@@ -365,7 +363,7 @@ var ticketInfoAttachment = function (ticket, extended) {
     var attachment = {};
 
     attachment.fallback = +ticket.id + ': ' + ticket.summary + ': ' + linkTicket(ticket.id);
-    attachment.pretext = '#<' + linkTicket(ticket.id) + '|' + ticket.id + '> *' + ticket.summary + '*';
+    attachment.pretext = '#<' + linkTicket(ticket.id) + '|' + ticket.id + '> ' + ticket.summary;
 
     attachment.fields = [{
         title: 'Entered',
@@ -384,21 +382,23 @@ var ticketInfoAttachment = function (ticket, extended) {
         value: ticket.contact.name,
         short: true
     }, {
-        title: 'In SLA',
-        value: ticket.isInSla,
+        title: 'Average Time',
+        value: ticket.customFields[1].value,
         short: true
     }, {
         title: 'Priority',
-        value: ticket.priority.name
+        value: ticket.priority.name,
+        short: true
     }];
 
     if (extended) {
-        attachment.fields.push({
-            title: 'Description',
-            value: ticket.initialDescription,
-            short: false
-        });
+        if (ticket.notes.length > 0) {
+            attachment.fields.push({
+                title: 'Description',
                 value: ticket.notes[0].text,
+                short: false
+            });
+        }
     }
 
     return attachment;
