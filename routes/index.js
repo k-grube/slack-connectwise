@@ -14,19 +14,20 @@ router.post('/api/slack', function (req, res, next) {
         /** @type SlackMessage */
         var response = {
             username: req.body.user_name,
-            text: req.body.command + ' ' + req.body.text,
-            response_type: 'in_channel'
+            text: 'Looking that up for you...',
+            response_type: 'ephemeral'
         };
 
-        res.json(response);
+        //res.json(response);
+        res.statusCode = 200;
+        res.end();
 
         slackCW.route(req.body, function (msg) {
-            console.log('response msg: ', msg);
             slackCW.send(req.body, msg);
         });
 
     } else {
-        res.status(401);
+        res.statusCode = 401;
         res.end();
     }
 });
