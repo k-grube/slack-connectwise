@@ -1,5 +1,6 @@
 var express = require('express'),
-    slackCW = require('../slack-connectwise');
+    slackCW = require('../slack-connectwise'),
+    Q = require('q');
 
 var SLACK_SLASH_TOKEN = process.env.SLACK_SLASH_TOKEN;
 
@@ -14,21 +15,27 @@ router.post('/api/slack', function (req, res, next) {
         /** @type SlackMessage */
         var response = {
             username: req.body.user_name,
-            text: 'Looking that up for you...',
-            response_type: 'ephemeral'
+            text: 'Working on it.',
+            response_type: 'in_channel'
         };
 
-        //res.json(response);
-        res.statusCode = 200;
-        res.end();
+        var timeout = setTimeout(function () {
+            res.json(response);
+            timeout = null;
+        }, 1000);
 
         slackCW.route(req.body, function (msg) {
+
+            if (timeout !== null) {
+                clearTimeout(timeout);
+                res.status(200).end();
+            }
+
             slackCW.send(req.body, msg);
         });
 
     } else {
-        res.statusCode = 401;
-        res.end();
+        res.status(401).end();
     }
 });
 
