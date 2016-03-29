@@ -4,7 +4,10 @@
 
 var request = require('request'),
     ConnectWise = require('connectwise-rest'),
-    moment = require('moment');
+    moment = require('moment'),
+    Q = require('q'),
+    minimist = require('minimist');
+
 require('moment-timezone');
 
 var COMPANY_ID = process.env.COMPANY_ID,
@@ -28,28 +31,110 @@ var slackConnectWise = {
     /**
      *
      * @param {SlackBody} body
-     * @param {function} callback callback(msg)
+     * @param {function} cb callback(msg)
      * @returns {*|promise}
      */
-    route: function (body, callback) {
+    route: function (body, cb) {
         var args = parseArgs(body.text);
+
+        if (!args.e) {
+            args.e = false;
+        }
 
         console.log('route:', args);
 
-        console.log('args length:', args.length);
+        if (args.ticket === 'find' || args.ticket === 'f') {
+            //find ticket
+            if (args.n > 0) {
+                //by ticket number
+                slackConnectWise.findTicketById(args.n)
+                    .then(function (res) {
+                        cb(ticketInfo(res, args.e));
+                    })
+                    .fail(function (err) {
+                        cb(errorHandler(err, 'Ticket'));
+                    });
+            } else if (args['--'].length > 0) {
+                //by summary
+                slackConnectWise.findTickets('summary like "%' + args['--'].join(' ') + '%"')
+                    .then(function (res) {
+                        if (res.length > 0) {
+                            var msg = {};
+                            var attachments = [];
+                            for (var i = 0; i < res.length; i++) {
+                                attachments.push(ticketInfoAttachment(res[i], args.e));
+                            }
 
-        if (args.length < 1 || args[0].toLowerCase() === 'help' || args[0].toLowerCase() === 'usage') {
-            callback(this.getUsage());
-        } else {
-            if (args[0].toLowerCase() === 'link' || args[0].toLowerCase() === 'l') {
-                routeLinkTicket(args, callback);
-            } else if (args[0].toLowerCase() === 'ticket' || args[0].toLowerCase() === 't') {
-                routeCreateTicket(args, callback);
-            } else {
-                //search for /cw <summary>
-                routeLinkTicket(args, callback)
+                            msg.mrkdwn = true;
+                            msg.username = "ConnectWise";
+                            msg.attachments = attachments;
+                            msg.response_type = 'in_channel';
+
+                            cb(msg);
+                        } else {
+                            cb(errorHandler(null, 'tickets'));
+                        }
+                    })
+                    .fail(function (err) {
+                        cb(errorHandler(err, 'Ticket'));
+                    });
             }
+        } else if (args.link) {
+            //link to ticket
+            if (args['--'].length > 0) {
+                //by summary
+                slackConnectWise.findTickets('summary like "%' + args['--'].join(' ') + '%"')
+                    .then(function (res) {
+                        if (res.length > 0) {
+                            var msg = {};
+                            var attachments = [];
+                            for (var i = 0; i < res.length; i++) {
+                                attachments.push(ticketInfoAttachment(res[i], args.e));
+                            }
+
+                            msg.mrkdwn = true;
+                            msg.username = "ConnectWise";
+                            msg.attachments = attachments;
+                            msg.response_type = 'in_channel';
+
+                            cb(msg);
+                        } else {
+                            cb(errorHandler(null, 'tickets'));
+                        }
+                    })
+                    .fail(function (err) {
+                        cb(errorHandler(err, 'Ticket'));
+                    });
+            } else {
+                //by ticket number
+                slackConnectWise.findTicketById(args.n)
+                    .then(function (res) {
+                        cb(ticketInfo(res, args.e));
+                    })
+                    .fail(function (err) {
+                        cb(errorHandler(err, 'Ticket'));
+                    });
+            }
+        } else if (args['_'].length > 0) {
+            //check if using /cw 123456 shortcut
+            if (/^\d+$/.test(args['_'][0])) {
+                //by ticket number
+                slackConnectWise.findTicketById(args['_'][0])
+                    .then(function (res) {
+                        cb(ticketInfo(res, args.e));
+                    })
+                    .fail(function (err) {
+                        cb(errorHandler(err, 'Ticket'));
+                    });
+            } else {
+                //send usage
+                cb(this.getUsage());
+            }
+        } else {
+            //send usage
+            cb(this.getUsage());
         }
+
     },
 
     /**
@@ -164,22 +249,23 @@ var slackConnectWise = {
          */
         var message = {};
 
-        message.text = "*/cw* [ *$ticketNbr* [ *link* | *ticket* | *config* ] ]\n" +
+        message.text = "*/cw* [ *$ticketNbr* ] | [ *link* | *ticket* ]\n" +
             "\n" +
-            "    link [ *$ticketNbr* | *$summary* ]\n" +
-            "       link [$ticketNbr] - post a link to the ticket $ticketNbr\n" +
-            "       link [$summary]   - post the first 5 results of a search for $summary\n" +
+            "    -link [ *$ticketNbr* | *$summary* ]\n" +
+            "       -link -n [$ticketNbr] - post a link to the ticket $ticketNbr\n" +
+            "       -link -- [$summary]   - post the first 5 results of a search for $summary\n" +
             "\n" +
-            "    ticket [ *create* | *find* | *status* ]  \n" +
-            "       ticket create [$summary=initial summary $company=companyId $board=boardName]\n" +
-            "                                   - create a ticket with $summary, for $companyId, on $boardName\n" +
-            "       ticket find [ *$summary* ]     - post the first 3 results of a search for $summary\n" +
-            "       ticket status [ *$ticketNbr* *$status* ] \n" +
-            "                                   - change the status of $ticketId to $status\n" +
-            "\n" +
-            "    config [ *find* \n" +
-            "       config find [ *$configName* ]   - post the first 3 results of a search for $configName\n" +
-            "       config find [ *$configId* ]     - post a link to the config $configId";
+            "    -ticket [ *find* ]  \n" +
+                //"       -ticket create [-summary=initial summary $company=companyId $board=boardName]\n" +
+                //"                                   - create a ticket with $summary, for $companyId, on $boardName\n" +
+            "       -ticket find -- [ *$summary* ]  - post the first 3 results of a search for $summary\n" +
+                //"       -ticket status [ *$ticketNbr* *$status* ] \n" +
+                //"                                   - change the status of $ticketId to $status\n" +
+                //"\n" +
+                //"    -config [ *find* \n" +
+                //"       config find [ *$configName* ]   - post the first 3 results of a search for $configName\n" +
+                //"       config find [ *$configId* ]     - post a link to the config $configId";
+            "";
 
         message.mrkdwn = true;
         message.response_type = 'ephemeral';
@@ -191,14 +277,32 @@ var slackConnectWise = {
 
 module.exports = slackConnectWise;
 
+/**
+ * @typedef {object} ParsedArgs
+ * @property {string} ticket ticket action
+ * @property {number} n numeric input
+ * @property {string} config config action
+ * @property {string} link link action
+ * @property {string[]} -- args with spaces
+ * @property {string[]} _ unparsed args
+ */
+
+/**
+ *
+ * @param text
+ * @returns {ParsedArgs}
+ */
 var parseArgs = function (text) {
     var args = text.split(' ');
 
     if (!args.length) {
-        args = [text];
+        args = [args];
     }
 
-    return args;
+    return minimist(args, {
+        alias: {ticket: 't', config: 'c', link: 'l'},
+        '--': true
+    });
 };
 
 /**
