@@ -38,7 +38,7 @@ var slackConnectWise = {
         var args = parseArgs(body.text);
 
         if (!args.e) {
-            args.e = false;
+            args.e = false; //explicitly set to false as opposed to 'falsey'
         }
 
         console.log('route:', args);
@@ -47,73 +47,21 @@ var slackConnectWise = {
             //find ticket
             if (args.n > 0) {
                 //by ticket number
-                slackConnectWise.findTicketById(args.n)
-                    .then(function (res) {
-                        cb(ticketInfo(res, args.e));
-                    })
-                    .fail(function (err) {
-                        cb(errorHandler(err, 'Ticket'));
-                    });
+                routeFindTicketById(args.n, args.e, cb);
             } else if (args['--'].length > 0) {
                 //by summary
-                slackConnectWise.findTickets('summary like "%' + args['--'].join(' ') + '%"')
-                    .then(function (res) {
-                        if (res.length > 0) {
-                            var msg = {};
-                            var attachments = [];
-                            for (var i = 0; i < res.length; i++) {
-                                attachments.push(ticketInfoAttachment(res[i], args.e));
-                            }
-
-                            msg.mrkdwn = true;
-                            msg.username = "ConnectWise";
-                            msg.attachments = attachments;
-                            msg.response_type = 'in_channel';
-
-                            cb(msg);
-                        } else {
-                            cb(errorHandler(null, 'tickets'));
-                        }
-                    })
-                    .fail(function (err) {
-                        cb(errorHandler(err, 'Ticket'));
-                    });
+                routeFindTicketsBySummary(args['--'].join(' '), args.e, cb);
+            } else {
+                cb(this.getUsage());
             }
         } else if (args.link) {
             //link to ticket
             if (args['--'].length > 0) {
                 //by summary
-                slackConnectWise.findTickets('summary like "%' + args['--'].join(' ') + '%"')
-                    .then(function (res) {
-                        if (res.length > 0) {
-                            var msg = {};
-                            var attachments = [];
-                            for (var i = 0; i < res.length; i++) {
-                                attachments.push(ticketInfoAttachment(res[i], args.e));
-                            }
-
-                            msg.mrkdwn = true;
-                            msg.username = "ConnectWise";
-                            msg.attachments = attachments;
-                            msg.response_type = 'in_channel';
-
-                            cb(msg);
-                        } else {
-                            cb(errorHandler(null, 'tickets'));
-                        }
-                    })
-                    .fail(function (err) {
-                        cb(errorHandler(err, 'Ticket'));
-                    });
+                routeFindTicketsBySummary(args['--'].join(' '), args.e, cb);
             } else if (args.n) {
                 //by ticket number
-                slackConnectWise.findTicketById(args.n)
-                    .then(function (res) {
-                        cb(ticketInfo(res, args.e));
-                    })
-                    .fail(function (err) {
-                        cb(errorHandler(err, 'Ticket'));
-                    });
+                routeFindTicketById(args.n, args.e, cb);
             } else {
                 //send usage
                 cb(this.getUsage());
@@ -122,14 +70,7 @@ var slackConnectWise = {
             //check if using /cw 123456 shortcut
             if (/^\d+$/.test(args['_'][0])) {
                 //by ticket number
-                slackConnectWise.findTicketById(args['_'][0])
-                    .then(function (res) {
-                        cb(ticketInfo(res, args.e));
-                    })
-                    .fail(function (err) {
-                        console.log('err!', err);
-                        cb(errorHandler(err, 'Ticket'));
-                    });
+                routeFindTicketById(args['_'][0], args.e, cb);
             } else {
                 //send usage
                 cb(this.getUsage());
@@ -315,6 +256,8 @@ var parseArgs = function (text) {
 
     return minimist(args, {
         alias: {ticket: 't', config: 'c', link: 'l'},
+        string: ['ticket', 'config', 'link'],
+        boolean: ['e'],
         '--': true
     });
 };
@@ -413,23 +356,6 @@ var ticketInfoAttachment = function (ticket, extended) {
 
 /**
  *
- * @param {Ticket} ticket
- * @param {boolean} extended
- * @returns {string}
- */
-var ticketInfoStr = function (ticket, extended) {
-    var msg = '*' + ticket.summary + '*';
-    console.log('dateEntered', ticket.dateEntered);
-    var dateEntered = moment(ticket.dateEntered).tz(SLACK_TZ).format('MM-DD-YYYY hh:mm a');
-
-    msg += '\n#<' + linkTicket(ticket.id) + '|' + ticket.id + '> Entered: ' + dateEntered + ', Status: '
-        + ticket.status.name + ', Company: ' + ticket.company.identifier;
-
-    return msg;
-};
-
-/**
- *
  * @param err
  * @param type
  * @returns {SlackMessage}
@@ -449,102 +375,50 @@ var errorHandler = function (err, type) {
 };
 
 /**
- * Route a command to the correct Link Ticket command
- * @param {string[]} args
- * @param {function} cb returns @type SlackMessage
+ *
+ * @param {string|number} id
+ * @param {boolean} extended
+ * @param cb cb(msg)
  */
-function routeLinkTicket(args, cb) {
-    console.log('cw link', args);
-    var id, summary;
-
-    if (args.length > 1) {
-        if (args[0].toLowerCase() === 'ticket' || args[0].toLowerCase() === 't') {
-            if (args[1].toLowerCase() === 'find' || args[1].toLowerCase() === 'f') {
-                if (parseInt(args[2])) {
-                    id = args[2];
-                } else {
-                    summary = args.slice(2).join(' ');
-                }
-            } else {
-                cb(slackConnectWise.getUsage());
-            }
-        } else if (args[1].toLowerCase() === 'link' || args[1].toLowerCase() === 'l') {
-            if (parseInt(args[2])) {
-                id = args[2];
-            } else {
-                summary = args.slice(2).join(' ');
-            }
-        } else {
-            summary = args.join(' ');
-        }
-    } else if (parseInt(args[0])) {
-        id = args[0];
-    }
-
-    if (id) {
-        slackConnectWise.findTicketById(id)
-            .then(function (res) {
-                cb(ticketInfo(res));
-            })
-            .fail(function (err) {
-                cb(errorHandler(err, 'Ticket'));
-            });
-
-    } else if (summary) {
-        slackConnectWise.findTickets('summary like "%' + summary + '%"')
-            .then(function (res) {
-                if (res.length > 0) {
-                    var msg = {};
-                    var result = [];
-                    for (var i = 0; i < res.length; i++) {
-                        result.push(ticketInfoStr(res[i], args.e));
-                    }
-                    msg.text = result.join('\n');
-                    msg.response_type = 'in_channel';
-                    msg.mrkdwn = true;
-
-                    cb(msg);
-                } else {
-                    cb(errorHandler(null, 'tickets'));
-                }
-            })
-            .fail(function (err) {
-                cb(errorHandler(err, 'Ticket'));
-            });
-    } else {
-        cb(slackConnectWise.getUsage());
-    }
+function routeFindTicketById(id, extended, cb) {
+    slackConnectWise.findTicketById(id)
+        .then(function (res) {
+            cb(ticketInfo(res, extended));
+        })
+        .fail(function (err) {
+            cb(errorHandler(err, 'Ticket'));
+        });
 }
 
 /**
  *
- * @param {string[]} args
- * @param {function} cb
+ * @param {string} summary
+ * @param {boolean} extended
+ * @param cb cb(msg)
  */
-var routeCreateTicket = function (args, cb) {
-    switch (args[1].toLowerCase()) {
-        case 'create' || 'c':
+function routeFindTicketsBySummary(summary, extended, cb) {
+    slackConnectWise.findTickets('summary like "%' + summary + '%"')
+        .then(function (res) {
+            if (res.length > 0) {
+                var msg = {};
+                msg.attachments = [];
+                for (var i = 0; i < res.length; i++) {
+                    msg.attachments.push(ticketInfoAttachment(res[i], extended));
+                }
 
-            //slackConnectWise.createTicket();
-            break;
-        case 'find' || 'f':
-            routeLinkTicket(args, cb);
-            break;
-        case 'status' || 's':
-            var re = /(\d{1,10}) ([a-zA-Z]*$)/g;
-            var params = re.exec(args.join(' '));
-            if (!params || !params[0] || !params[1]) {
-                cb(slackConnectWise.getUsage());
+                msg.mrkdwn = true;
+                msg.username = "ConnectWise";
+                msg.response_type = 'in_channel';
+
+                cb(msg);
             } else {
-                //slackConnectWise.updateStatus(params[1], params[2]).then(cb).fail(cb);
+                cb(errorHandler(null, 'tickets'));
             }
-            break;
-        default:
-            cb(slackConnectWise.getUsage());
-            break;
-    }
-
-};
+        })
+        .fail(function (err) {
+            cb(errorHandler(err, 'Ticket'));
+        });
+}
 
 /**
  * @typedef {object} SlackBody
