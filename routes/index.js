@@ -22,16 +22,16 @@ router.post('/api/slack', function (req, res, next) {
         var timeout = setTimeout(function () {
             res.json(response);
             timeout = null;
-        }, 1000);
+        }, 2000);
 
         slackCW.route(req.body, function (msg) {
 
             if (timeout !== null) {
                 clearTimeout(timeout);
-                res.status(200).end();
+                res.json(msg);
+            } else {
+                slackCW.send(req.body, msg);
             }
-
-            slackCW.send(req.body, msg);
         });
 
     } else {
