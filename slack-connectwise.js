@@ -127,6 +127,7 @@ var slackConnectWise = {
                         cb(ticketInfo(res, args.e));
                     })
                     .fail(function (err) {
+                        console.log('err!', err);
                         cb(errorHandler(err, 'Ticket'));
                     });
             } else {
@@ -374,34 +375,34 @@ var ticketInfoAttachment = function (ticket, extended) {
         short: true
     }, {
         title: 'Status',
-        value: ticket.status.name,
+        value: ticket.status && ticket.status.name || "",
         short: true
     }, {
         title: 'Company',
-        value: ticket.company.identifier,
+        value: ticket.company && ticket.company.identifier || "",
         short: true
     }, {
         title: 'Contact',
-        value: ticket.contact.name,
+        value:  ticket.contact && ticket.contact.name || "",
         short: true
     }, {
         title: 'Average Time',
-        value: ticket.customFields[1] && ticket.customFields[1].value || "",
+        value: ticket.customFields && ticket.customFields[1] && ticket.customFields[1].value || "",
         short: true
     }, {
         title: 'Priority',
-        value: ticket.priority.name,
+        value: ticket.priority && ticket.priority.name || "",
         short: true
     }, {
         title: 'Ticket Owner',
-        value: ticket.owner.identifier,
+        value: ticket.owner && ticket.owner.identifier || "",
         short: true
     }];
 
     if (extended) {
         attachment.fields.push({
             title: 'Description',
-            value: ticket.notes[0] && ticket.notes[0].text,
+            value: ticket.notes && ticket.notes[0] && ticket.notes[0].text,
             short: false
         });
     }
