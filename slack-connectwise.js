@@ -265,14 +265,14 @@ var slackConnectWise = {
 
         message.text = "*/cw* [ *$ticketNbr* ] | [ *link* | *ticket* ]\n" +
             "\n" +
-            "    -link [ *$ticketNbr* | *$summary* ]\n" +
-            "       -link -n [$ticketNbr] - post a link to the ticket $ticketNbr\n" +
-            "       -link -- [$summary]   - post the first 5 results of a search for $summary\n" +
+            "    [-l | --link] [ *$ticketNbr* | *$summary* ]\n" +
+            "       --link -n [$ticketNbr] - post a link to the ticket $ticketNbr\n" +
+            "       --link -- [$summary]   - post the first 5 results of a search for $summary\n" +
             "\n" +
-            "    -ticket [ *find* ]  \n" +
+            "    [-t | --ticket] [ *find* ]  \n" +
                 //"       -ticket create [-summary=initial summary $company=companyId $board=boardName]\n" +
                 //"                                   - create a ticket with $summary, for $companyId, on $boardName\n" +
-            "       -ticket find -- [ *$summary* ]  - post the first 3 results of a search for $summary\n" +
+            "       --ticket find -- *$summary*  - post the first 3 results of a search for $summary\n" +
                 //"       -ticket status [ *$ticketNbr* *$status* ] \n" +
                 //"                                   - change the status of $ticketId to $status\n" +
                 //"\n" +
@@ -383,7 +383,7 @@ var ticketInfoAttachment = function (ticket, extended) {
         short: true
     }, {
         title: 'Contact',
-        value:  ticket.contact && ticket.contact.name || "",
+        value: ticket.contact && ticket.contact.name || "",
         short: true
     }, {
         title: 'Average Time',
