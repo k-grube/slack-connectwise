@@ -340,6 +340,10 @@ var ticketInfoAttachment = function (ticket, extended) {
         title: 'Ticket Owner',
         value: ticket.owner && ticket.owner.identifier || "",
         short: true
+    }, {
+        title: 'Site',
+        value: ticket.site && ticket.site.name || "",
+        short: true
     }];
 
     if (extended) {
