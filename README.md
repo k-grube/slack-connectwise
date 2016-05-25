@@ -18,16 +18,20 @@ A basic node.js based slash command for Slack for ConnectWise.
 Clone to Heroku, or your own thing. 
 Set environment variables.
 
->COMPANY_ID=YourCompany
->COMPANY_URL=cw.yourcompany.com
->PUBLIC_KEY=abcdef12345
->  CW API user public key
->PRIVATE_KEY=abcdef12345
->  CW API user private key
->SLACK_SLASH_TOKEN=abcdef12345
->  Token for the slash command from Slack
->SLACK_TZ=America/Los_Angeles
->  See moment.js timezone formats, used to convert dates from UTC
+>   COMPANY_ID=YourCompany
+>   COMPANY_URL=cw.yourcompany.com
+>
+>   PUBLIC_KEY=abcdef12345
+>       CW API user public key
+>
+>   PRIVATE_KEY=abcdef12345
+>       CW API user private key
+>
+>   SLACK_SLASH_TOKEN=abcdef12345
+>       Token for the slash command from Slack
+>
+>   SLACK_TZ=America/Los_Angeles
+>       See moment.js timezone formats, used to convert dates from UTC
 
 Note: Doesn't support cloud-hosted ConnectWise, yet.
 
