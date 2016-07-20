@@ -11,19 +11,21 @@ var request = require('request'),
 require('moment-timezone');
 
 var COMPANY_ID = process.env.COMPANY_ID,
-    COMPANY_URL = process.env.COMPANY_URL,
-    PUBLIC_KEY = process.env.PUBLIC_KEY,
-    PRIVATE_KEY = process.env.PRIVATE_KEY,
-    SLACK_TZ = process.env.SLACK_TZ || 'America/Los_Angeles';
+  COMPANY_URL = process.env.COMPANY_URL,
+  PUBLIC_KEY = process.env.PUBLIC_KEY,
+  PRIVATE_KEY = process.env.PRIVATE_KEY,
+  SLACK_TZ = process.env.SLACK_TZ || 'America/Los_Angeles',
+  ENTRY_POINT = process.env.ENTRY_POINT || '';
 
 /**
  * @type Tickets
  */
 var cwt = new ConnectWise({
-    companyId: COMPANY_ID,
-    companyUrl: COMPANY_URL,
-    publicKey: PUBLIC_KEY,
-    privateKey: PRIVATE_KEY
+  companyId: COMPANY_ID,
+  companyUrl: COMPANY_URL,
+  publicKey: PUBLIC_KEY,
+  privateKey: PRIVATE_KEY,
+  entryPoint: ENTRY_POINT
 }).ServiceDeskAPI.Tickets;
 
 var slackConnectWise = {
