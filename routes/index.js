@@ -3,6 +3,7 @@ var express = require('express'),
     Q = require('q');
 
 var SLACK_SLASH_TOKEN = process.env.SLACK_SLASH_TOKEN;
+var DEBUG = process.env.DEBUG;
 
 if (!SLACK_SLASH_TOKEN) {
     throw new Error('SLACK_SLASH_TOKEN env variable must be set.');
@@ -11,6 +12,10 @@ if (!SLACK_SLASH_TOKEN) {
 var router = express.Router();
 
 router.post('/api/slack', function (req, res, next) {
+    if (DEBUG) {
+        console.log(JSON.stringify(req.body));
+    }
+
     if (req.body && req.body.token === SLACK_SLASH_TOKEN) {
         /** @type SlackMessage */
         var response = {
