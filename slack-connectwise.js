@@ -25,7 +25,7 @@ var cwt = new ConnectWise({
   companyUrl: COMPANY_URL,
   publicKey: PUBLIC_KEY,
   privateKey: PRIVATE_KEY,
-  entryPoint: ENTRY_POINT
+  entryPoint: ENTRY_POINT,
 }).ServiceDeskAPI.Tickets;
 
 var slackConnectWise = {
@@ -99,10 +99,10 @@ var slackConnectWise = {
     var options = {
       url: body.response_url,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(message),
-      method: 'POST'
+      method: 'POST',
     };
 
     console.log('Sending POST message: ', message);
@@ -125,8 +125,8 @@ var slackConnectWise = {
       return cwt.api(ticket._info.notes_href, 'GET').then(function (notes) {
         ticket.notes = notes;
         return ticket;
-      })
-    })
+      });
+    });
   },
 
   /**
@@ -139,7 +139,7 @@ var slackConnectWise = {
     return cwt.getTickets({
       conditions: conditions,
       page: 1,
-      pageSize: 1
+      pageSize: 1,
     }).then(function (tickets) {
       return Q.all(tickets.map(function (ticket) {
         return cwt.api(ticket._info.notes_href, 'GET').then(function (notes) {
@@ -161,7 +161,7 @@ var slackConnectWise = {
       conditions: conditions,
       page: 1,
       pageSize: 3,
-      orderBy: 'dateEntered desc'
+      orderBy: 'dateEntered desc',
     }).then(function (tickets) {
       return Q.all(tickets.map(function (ticket) {
         return cwt.api(ticket._info.notes_href, 'GET').then(function (notes) {
@@ -176,12 +176,12 @@ var slackConnectWise = {
     return cwt.createTicket({
       summary: summary,
       company: {
-        identifier: companyId
+        identifier: companyId,
       },
       board: {
-        name: board
+        name: board,
       },
-      initialDescription: initialDescription
+      initialDescription: initialDescription,
     });
   },
 
@@ -228,7 +228,7 @@ var slackConnectWise = {
     message.response_type = 'ephemeral';
 
     return message;
-  }
+  },
 
 };
 
@@ -260,7 +260,7 @@ var parseArgs = function (text) {
     alias: {ticket: 't', config: 'c', link: 'l'},
     string: ['ticket', 'config', 'link'],
     boolean: ['e'],
-    '--': true
+    '--': true,
   });
 };
 
@@ -270,7 +270,7 @@ var parseArgs = function (text) {
  * @returns {string}
  */
 var linkTicket = function (id) {
-  return 'https://' + COMPANY_URL + '/v4_6_release/services/system_io/Service/fv_sr100_request.rails?service_recid=' + id + '&companyName=' + COMPANY_ID
+  return 'https://' + COMPANY_URL + '/v4_6_release/services/system_io/Service/fv_sr100_request.rails?service_recid=' + id + '&companyName=' + COMPANY_ID;
 };
 
 /**
@@ -317,42 +317,42 @@ var ticketInfoAttachment = function (ticket, extended) {
   attachment.fields = [{
     title: 'Entered',
     value: moment(ticket.dateEntered).tz(SLACK_TZ).format('MM-DD-YYYY hh:mm a'),
-    short: true
+    short: true,
   }, {
     title: 'Status',
     value: ticket.status && ticket.status.name || "",
-    short: true
+    short: true,
   }, {
     title: 'Company',
     value: ticket.company && ticket.company.identifier || "",
-    short: true
+    short: true,
   }, {
     title: 'Contact',
     value: ticket.contact && ticket.contact.name || "",
-    short: true
+    short: true,
   }, {
     title: 'Average Time',
     value: ticket.customFields && ticket.customFields[1] && ticket.customFields[1].value || "",
-    short: true
+    short: true,
   }, {
     title: 'Priority',
     value: ticket.priority && ticket.priority.name || "",
-    short: true
+    short: true,
   }, {
     title: 'Ticket Owner',
     value: ticket.owner && ticket.owner.identifier || "",
-    short: true
+    short: true,
   }, {
     title: 'Site',
     value: ticket.site && ticket.site.name || "",
-    short: true
+    short: true,
   }];
 
   if (extended) {
     attachment.fields.push({
       title: 'Description',
       value: ticket.notes && ticket.notes[0] && ticket.notes[0].text,
-      short: false
+      short: false,
     });
   }
 
@@ -391,7 +391,7 @@ function routeFindTicketById(id, extended, cb) {
     .then(function (res) {
       cb(ticketInfo(res, extended));
     })
-    .fail(function (err) {
+    .catch(function (err) {
       cb(errorHandler(err, 'Ticket'));
     });
 }
@@ -421,7 +421,7 @@ function routeFindTicketsBySummary(summary, extended, cb) {
         cb(errorHandler(null, 'tickets'));
       }
     })
-    .fail(function (err) {
+    .catch(function (err) {
       cb(errorHandler(err, 'Ticket'));
     });
 }
