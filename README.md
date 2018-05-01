@@ -1,5 +1,7 @@
 # slack-connectwise
 
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/k-grube/slack-connectwise)
+
 A basic node.js based slash command for Slack for ConnectWise. 
 
 ## Usage
@@ -38,4 +40,3 @@ Note: For cloud ConnectWise, set `COMPANY_URL` to your particular API entrypoint
 
 - Start with `node ./bin/www`
 - Point the Slash command to `<boturl>/api/slack`.
- 

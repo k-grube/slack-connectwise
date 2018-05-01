@@ -1,0 +1,36 @@
+{
+  "name": "slack-connectwise",
+  "description": "A basic node.js based slash command for Slack for ConnectWise.",
+  "repository": "https://github.com/k-grube/slack-connectwise",
+  "keywords": [
+    "slack",
+    "connectwise",
+    "connectwise manage"
+  ],
+  "env": {
+    "COMPANY_ID": {
+      "description": "Your ConnectWise Manage company ID"
+    },
+    "COMPANY_URL": {
+      "description": "Your ConnectWise Manage URL, or if hosted, the API URL"
+    },
+    "PUBLIC_KEY": {
+      "description": "CW API user public key"
+    },
+    "PRIVATE_KEY": {
+      "description": "CW API user public key"
+    },
+    "SLACK_SLASH_TOKEN": {
+      "description": "Token for the slash command from Slack"
+    },
+    "SLACK_TZ": {
+      "description": "Timezone for converting UTC dates.  Google moment js timezones for a list of valid zones.  Default is America/Los_Angeles",
+      "value": "America/Los_Angeles"
+    },
+    "ENTRY_POINT": {
+      "description": "If hosted, change to the current hosted API entry point, e.g. v2016_2",
+      "value": "v4_6_release",
+      "required": false
+    }
+  }
+}
