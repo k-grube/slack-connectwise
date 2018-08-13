@@ -120,7 +120,7 @@ var slackConnectWise = {
    * @returns {Ticket|promise}
    */
   findTicketById: function (id) {
-    console.log("searching for id", id);
+    console.log('searching for id', id);
     return cwt.getTicketById(id).then(function (ticket) {
       return cwt.api(ticket._info.notes_href, 'GET').then(function (notes) {
         ticket.notes = notes;
@@ -206,23 +206,23 @@ var slackConnectWise = {
      */
     var message = {};
 
-    message.text = "*/cw* [ *$ticketNbr* ] | [ *link* | *ticket* ]\n" +
-      "\n" +
-      "    [-l | --link] [ *$ticketNbr* | *$summary* ]\n" +
-      "       --link -n [$ticketNbr] - post a link to the ticket $ticketNbr\n" +
-      "       --link -- [$summary]   - post the first 5 results of a search for $summary\n" +
-      "\n" +
-      "    [-t | --ticket] [ *find* ]  \n" +
+    message.text = '*/cw* [ *$ticketNbr* ] | [ *link* | *ticket* ]\n' +
+      '\n' +
+      '    [-l | --link] [ *$ticketNbr* | *$summary* ]\n' +
+      '       --link -n [$ticketNbr] - post a link to the ticket $ticketNbr\n' +
+      '       --link -- [$summary]   - post the first 5 results of a search for $summary\n' +
+      '\n' +
+      '    [-t | --ticket] [ *find* ]  \n' +
       //"       -ticket create [-summary=initial summary $company=companyId $board=boardName]\n" +
       //"                                   - create a ticket with $summary, for $companyId, on $boardName\n" +
-      "       --ticket find -- *$summary*  - post the first 3 results of a search for $summary\n" +
+      '       --ticket find -- *$summary*  - post the first 3 results of a search for $summary\n' +
       //"       -ticket status [ *$ticketNbr* *$status* ] \n" +
       //"                                   - change the status of $ticketId to $status\n" +
       //"\n" +
       //"    -config [ *find* \n" +
       //"       config find [ *$configName* ]   - post the first 3 results of a search for $configName\n" +
       //"       config find [ *$configId* ]     - post a link to the config $configId";
-      "";
+      '';
 
     message.mrkdwn = true;
     message.response_type = 'ephemeral';
@@ -294,7 +294,7 @@ var ticketInfo = function (ticket, extended) {
    */
   var msg = {};
   msg.mrkdwn = true;
-  msg.username = "ConnectWise";
+  msg.username = 'ConnectWise';
   msg.attachments = [ticketInfoAttachment(ticket, extended)];
   msg.response_type = 'in_channel';
 
@@ -320,31 +320,31 @@ var ticketInfoAttachment = function (ticket, extended) {
     short: true,
   }, {
     title: 'Status',
-    value: ticket.status && ticket.status.name || "",
+    value: ticket.status && ticket.status.name || '',
     short: true,
   }, {
     title: 'Company',
-    value: ticket.company && ticket.company.identifier || "",
+    value: ticket.company && ticket.company.identifier || '',
     short: true,
   }, {
     title: 'Contact',
-    value: ticket.contact && ticket.contact.name || "",
+    value: ticket.contact && ticket.contact.name || '',
     short: true,
   }, {
     title: 'Average Time',
-    value: ticket.customFields && ticket.customFields[1] && ticket.customFields[1].value || "",
+    value: ticket.customFields && ticket.customFields[1] && ticket.customFields[1].value || '',
     short: true,
   }, {
     title: 'Priority',
-    value: ticket.priority && ticket.priority.name || "",
+    value: ticket.priority && ticket.priority.name || '',
     short: true,
   }, {
     title: 'Ticket Owner',
-    value: ticket.owner && ticket.owner.identifier || "",
+    value: ticket.owner && ticket.owner.identifier || '',
     short: true,
   }, {
     title: 'Site',
-    value: ticket.site && ticket.site.name || "",
+    value: ticket.site && ticket.site.name || '',
     short: true,
   }];
 
@@ -413,7 +413,7 @@ function routeFindTicketsBySummary(summary, extended, cb) {
         }
 
         msg.mrkdwn = true;
-        msg.username = "ConnectWise";
+        msg.username = 'ConnectWise';
         msg.response_type = 'in_channel';
 
         cb(msg);
