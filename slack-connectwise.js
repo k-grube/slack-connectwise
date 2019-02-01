@@ -26,6 +26,7 @@ var cwt = new ConnectWise({
   publicKey: PUBLIC_KEY,
   privateKey: PRIVATE_KEY,
   entryPoint: ENTRY_POINT,
+  clientId: '306e9c31-2589-49bc-a9bf-bcba616b3f98',
 }).ServiceDeskAPI.Tickets;
 
 var slackConnectWise = {
@@ -117,7 +118,7 @@ var slackConnectWise = {
   /**
    *
    * @param id
-   * @returns {Ticket|promise}
+   * @returns {Promise<Ticket>}
    */
   findTicketById: function (id) {
     console.log('searching for id', id);
@@ -132,7 +133,7 @@ var slackConnectWise = {
   /**
    * Search for a single ticket
    * @param conditions
-   * @returns {Ticket[]|promise}
+   * @returns {Promise<Ticket[]>}
    */
   findTicket: function (conditions) {
     console.log('findTicket: searching for conditions', conditions);
@@ -270,7 +271,7 @@ var parseArgs = function (text) {
  * @returns {string}
  */
 var linkTicket = function (id) {
-  return 'https://' + COMPANY_URL + '/v4_6_release/services/system_io/Service/fv_sr100_request.rails?service_recid=' + id + '&companyName=' + COMPANY_ID;
+  return `https://${COMPANY_URL}/v4_6_release/services/system_io/router/openrecord.rails?locale=en_US&companyName=${COMPANY_ID}&recordType=ServiceFV&recid=${id}`;
 };
 
 /**
@@ -279,7 +280,7 @@ var linkTicket = function (id) {
  * @returns {string}
  */
 var linkConfig = function (id) {
-  return 'https://' + COMPANY_URL + '/v4_6_release/services/system_io/router/openrecord.rails?locale=en_US&recordType=ConfigFv&recid=' + id;
+  return `https://${COMPANY_URL}/v4_6_release/services/system_io/router/openrecord.rails?locale=en_US&companyName=${COMPANY_ID}&recordType=ConfigFV&recid=${id}`;
 };
 
 /**
