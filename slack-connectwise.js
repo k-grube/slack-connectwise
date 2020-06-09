@@ -15,7 +15,8 @@ var COMPANY_ID = process.env.COMPANY_ID,
   PUBLIC_KEY = process.env.PUBLIC_KEY,
   PRIVATE_KEY = process.env.PRIVATE_KEY,
   SLACK_TZ = process.env.SLACK_TZ || 'America/Los_Angeles',
-  ENTRY_POINT = process.env.ENTRY_POINT || '';
+  ENTRY_POINT = process.env.ENTRY_POINT || '',
+  API_VERSION = process.env.API_VERSION || '2019.5';
 
 /**
  * @type Tickets
@@ -27,6 +28,7 @@ var cwt = new ConnectWise({
   privateKey: PRIVATE_KEY,
   entryPoint: ENTRY_POINT,
   clientId: '306e9c31-2589-49bc-a9bf-bcba616b3f98',
+  apiVersion: API_VERSION,
 }).ServiceDeskAPI.Tickets;
 
 var slackConnectWise = {
@@ -317,7 +319,7 @@ var ticketInfoAttachment = function (ticket, extended) {
 
   attachment.fields = [{
     title: 'Entered',
-    value: moment(ticket.dateEntered).tz(SLACK_TZ).format('MM-DD-YYYY hh:mm a'),
+    value: moment(ticket._info && ticket._info.dateEntered).tz(SLACK_TZ).format('MM-DD-YYYY hh:mm a'),
     short: true,
   }, {
     title: 'Status',
