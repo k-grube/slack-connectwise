@@ -16,7 +16,7 @@
     "express": "^4.17.1",
     "jsonfile": "^2.4.0",
     "minimist": "latest",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "moment-timezone": "^0.5.26",
     "morgan": "^1.9.1",
     "q": "^1.5.1",
