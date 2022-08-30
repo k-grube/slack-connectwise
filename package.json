@@ -17,7 +17,7 @@
     "jsonfile": "^2.4.0",
     "minimist": "latest",
     "moment": "^2.24.0",
-    "moment-timezone": "^0.5.26",
+    "moment-timezone": "^0.5.35",
     "morgan": "^1.9.1",
     "q": "^1.5.1",
     "request": "^2.88.0",
